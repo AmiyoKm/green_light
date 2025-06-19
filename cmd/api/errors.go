@@ -13,10 +13,13 @@ func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
-	message := "the server encountered a problem and could not process your request"
+	message := "the requested resource could not be found"
 	app.errorResponse(w, r, http.StatusInternalServerError, message)
 }
-
+func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
+	message := "unable to update the record due to and edit conflict , please try again"
+	app.errorResponse(w, r, http.StatusConflict, message)
+}
 func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
 	message := fmt.Sprintf("the %s method is not supported for this resource", r.Method)
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, message)
