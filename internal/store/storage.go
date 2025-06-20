@@ -17,6 +17,7 @@ var (
 
 type Storage struct {
 	Movies interface {
+		GetAll(ctx context.Context, title string, genres []string, filters Filters) ([]*Movie, error)
 		Create(ctx context.Context, movie *Movie) error
 		Get(ctx context.Context, id int64) (*Movie, error)
 		Update(ctx context.Context, movie *Movie) error
