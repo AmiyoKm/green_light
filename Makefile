@@ -7,8 +7,8 @@ endif
 MIGRATIONS_PATH= ./migrations
 
 .PHONY : migrate-create
-migration:
-	@migrate create -seq -ext sql -dir ${MIGRATIONS_PATH} $(filter-out $@,$(MAKECMDGOALS))
+migrate-create:
+	@migrate create -seq -ext sql -dir ${MIGRATIONS_PATH} $(NAME)
 
 .PHONY : migrate-up
 migrate-up:
