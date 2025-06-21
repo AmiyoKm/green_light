@@ -130,7 +130,7 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 
 	if err != nil {
 		switch err {
-		case store.EditConflict:
+		case store.ErrEditConflict:
 			app.editConflictResponse(w, r)
 			return
 		default:
