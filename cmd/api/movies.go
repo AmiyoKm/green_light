@@ -45,7 +45,7 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/movies/%d", movie.ID))
-	if err := app.writeJSON(w, http.StatusCreated, envelop{"movie": movie}, headers); err != nil {
+	if err := app.writeJSON(w, http.StatusCreated, envelope{"movie": movie}, headers); err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 
@@ -67,7 +67,7 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	}
-	if err := app.writeJSON(w, http.StatusOK, envelop{"movie": movie}, nil); err != nil {
+	if err := app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil); err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
 }
@@ -138,7 +138,7 @@ func (app *application) updateMovieHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
-	if err := app.writeJSON(w, http.StatusOK, envelop{"movie": movie}, nil); err != nil {
+	if err := app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil); err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
@@ -162,7 +162,7 @@ func (app *application) deleteMovieHandler(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	}
-	err = app.writeJSON(w, http.StatusOK, envelop{"message": "movie successfully deleted"}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successfully deleted"}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -192,13 +192,13 @@ func (app *application) listMoviesHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	movies, err := app.store.Movies.GetAll(r.Context(), input.Title, input.Genres, input.Filters)
+	movies, metadata, err := app.store.Movies.GetAll(r.Context(), input.Title, input.Genres, input.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	if err := app.writeJSON(w,http.StatusOK , envelop{"movies": movies} , nil) ; err != nil {
-		app.serverErrorResponse(w,r,err)
+	if err := app.writeJSON(w, http.StatusOK, envelope{"movies": movies, "metadata": metadata}, nil); err != nil {
+		app.serverErrorResponse(w, r, err)
 		return
 	}
 }
