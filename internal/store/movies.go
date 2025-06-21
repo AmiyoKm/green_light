@@ -86,7 +86,7 @@ func (s *MovieStore) Update(ctx context.Context, movie *Movie) error {
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
-			return EditConflict
+			return ErrEditConflict
 		default:
 			return err
 		}
