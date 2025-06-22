@@ -5,10 +5,12 @@ import (
 	"database/sql"
 	"flag"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/AmiyoKm/green_light/internal/env"
 	"github.com/AmiyoKm/green_light/internal/jsonlog"
+	"github.com/AmiyoKm/green_light/internal/mailer"
 	"github.com/AmiyoKm/green_light/internal/store"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -30,11 +32,20 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+	smtp struct {
+		host     string
+		port     int
+		username string
+		password string
+		sender   string
+	}
 }
 type application struct {
 	config config
 	logger *jsonlog.Logger
 	store  store.Storage
+	mailer mailer.Mailer
+	wg     sync.WaitGroup
 }
 
 func main() {
@@ -58,6 +69,11 @@ func main() {
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limit burst size")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiting")
 
+	flag.StringVar(&cfg.smtp.host, "smtp-host", "sandbox.smtp.mailtrap.io", "SMTP host")
+	flag.IntVar(&cfg.smtp.port, "smtp-port", 2525, "SMTP port")
+	flag.StringVar(&cfg.smtp.username, "smtp-username", "33d6aac1de496d", "SMTP username")
+	flag.StringVar(&cfg.smtp.password, "smtp-password", "cc527b84e26fd8", "SMTP password")
+	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight<no-reply@greenlight.net>", "SMTP sender")
 	flag.Parse()
 
 	db, err := openDB(cfg)
@@ -73,6 +89,7 @@ func main() {
 		config: cfg,
 		logger: logger,
 		store:  storage,
+		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
 	err = app.serve()
