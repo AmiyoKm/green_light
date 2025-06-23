@@ -5,7 +5,10 @@ Hi,
 
 Thank you for signing up for a Greenlight account. We're excited to have you on board!
 
-For your reference, your user ID number is {{.ID}}.
+For your reference, your user ID number is {{.userID}}.
+
+Please send a request to the "PUT /v1/users/activated" endpoint with following JSON body to activate your account.
+{"token":"{{.activationToken}}"}
 
 If you have any questions or need assistance, feel free to reply to this email.
 
@@ -54,8 +57,16 @@ The Greenlight Team
         <p>Thank you for signing up for a Greenlight account. We're <strong>excited</strong> to have you on board!</p>
         <p>
             For your reference, your user ID number is:<br>
-            <strong style="font-size:1.1em;">{{.ID}}</strong>
+            <strong style="font-size:1.1em;">{{.userID}}</strong>
         </p>
+        <p>
+            Please send a request to the <strong style="font-size:1.1em;">"PUT /v1/users/activated"</strong> endpoint with following JSON body to activate your account:
+        </p>
+        <pre>
+            <code>
+                {"token":"{{.activationToken}}"}
+            </code>
+        </pre>
         <p>If you have any questions or need assistance, just reply to this email and we'll be happy to help.</p>
         <div class="footer">
             Best regards,<br>
