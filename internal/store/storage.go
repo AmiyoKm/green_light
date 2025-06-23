@@ -27,6 +27,11 @@ type Storage struct {
 		Create(ctx context.Context, user *User) error
 		GetByEmail(ctx context.Context, email string) (*User, error)
 		Update(ctx context.Context, user *User) error
+		GetForToken(ctx context.Context, tokenScope, tokenPlainText string) (*User, error)
+	}
+	Tokens interface {
+		New(ctx context.Context, userID int64, ttl time.Duration, scope string) (*Token, error)
+		DeleteAllForUser(ctx context.Context, scope string, userID int64) error
 	}
 }
 
@@ -35,5 +40,6 @@ func NewStorage(db *sql.DB) Storage {
 	return Storage{
 		Movies: &MovieStore{DB: db},
 		Users:  &UserStore{DB: db},
+		Tokens: &TokenStore{DB: db},
 	}
 }
