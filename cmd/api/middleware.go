@@ -13,6 +13,8 @@ import (
 	"golang.org/x/time/rate"
 )
 
+// Set a custom header and a error response to the client when the server
+// recovers from an error
 func (app *application) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -34,6 +36,10 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 		mu      sync.Mutex
 		clients = make(map[string]*client)
 	)
+
+	// creates a background goroutine that runs alongside the main go routine and
+	// deletes ip addresses from the client hashmap that has not made a request in
+	// 3 Minutes
 	go func() {
 		for {
 			time.Sleep(time.Minute)
@@ -55,10 +61,14 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 			mu.Lock()
 
 			if _, found := clients[ip]; !found {
+				// if client ip not found in the clients HashMap then make a new Limiter instance
+				// ip as the key
+				// limiter as the value
 				clients[ip] = &client{
 					limiter: rate.NewLimiter(rate.Limit(app.config.limiter.rps), app.config.limiter.burst),
 				}
 			}
+			// update the lastSeen with every new request made
 			clients[ip].lastSeen = time.Now()
 
 			if !clients[ip].limiter.Allow() {
@@ -77,6 +87,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 func (app *application) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
+		// response may vary depending on Authorization Header
 		w.Header().Add("Vary", "Authorization")
 
 		authorizationHeader := r.Header.Get("Authorization")
@@ -142,6 +153,10 @@ func (app *application) requiredActivatedUser(next http.HandlerFunc) http.Handle
 	return app.requiredAuthenticatedUser(fn)
 }
 
+// Middleware that checks if the authenticated and activated user has the required permission.
+// This wraps requiredActivatedUser, which itself wraps requiredAuthenticatedUser.
+// The middleware chain is: requirePermission → requiredActivatedUser → requiredAuthenticatedUser.
+// Each middleware is executed in order when next.ServeHTTP() is called.
 func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
 	var fn http.HandlerFunc
 	fn = func(w http.ResponseWriter, r *http.Request) {
@@ -160,4 +175,42 @@ func (app *application) requirePermission(code string, next http.HandlerFunc) ht
 		next.ServeHTTP(w, r)
 	}
 	return app.requiredActivatedUser(fn)
+}
+
+func (app *application) enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// add Vary Header because responses will be different due to these Headers
+		w.Header().Add("Vary", "Origin")
+		w.Header().Add("Vary", "Access-Control-Request-Method")
+
+		origin := r.Header.Get("Origin")
+
+		if origin != "" {
+			for i := range app.config.cors.trustedOrigins {
+				if origin == app.config.cors.trustedOrigins[i] {
+
+					w.Header().Set("Access-Control-Allow-Origin", origin)
+
+					// checks if it is a preflight request by checking method OPTIONS and Header
+					if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+
+						// Adds Access-Control-Allow Headers for response to the preflight request
+						w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE")
+						w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+
+						// Access-Control-Allow-Methods and Access-Control-Allow-Headers cached for 15 seconds.
+						// means no need for again sending the OPTIONS preflight request for 15s.
+						w.Header().Set("Access-Control-Max-Age", "15")
+
+						w.WriteHeader(http.StatusOK)
+						return
+					}
+					break
+				}
+			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
