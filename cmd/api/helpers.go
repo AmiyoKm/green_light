@@ -27,6 +27,8 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 }
 
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
+
+	// for better indentation of JSON in the CLI
 	js, err := json.MarshalIndent(data, "", "\t")
 	if err != nil {
 		return err
@@ -42,6 +44,7 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 	w.Write(js)
 	return nil
 }
+
 func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	maxBytes := 1_048_576
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
@@ -93,6 +96,7 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	return nil
 }
 
+// reads string value from the query key in the URL parameter
 func (app *application) readString(qs url.Values, key string, defaultValue string) string {
 	s := qs.Get(key)
 
@@ -102,6 +106,8 @@ func (app *application) readString(qs url.Values, key string, defaultValue strin
 	return s
 }
 
+// reads comma-separated-values from the query key in the URL parameter.
+// returns a slice of strings of the values in the parameter
 func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
 	csv := qs.Get(key)
 
@@ -111,6 +117,7 @@ func (app *application) readCSV(qs url.Values, key string, defaultValue []string
 	return strings.Split(csv, ",")
 }
 
+// reads int value from the query key in the URL parameter
 func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
 	s := qs.Get(key)
 
@@ -135,12 +142,14 @@ func (app *application) background(fn func()) {
 
 		defer app.wg.Done()
 
+		// if a error is found in the in-built recover() function logs it
 		defer func() {
 			if err := recover(); err != nil {
 				app.logger.PrintError(fmt.Errorf("%s", err), nil)
 			}
 		}()
 
+		// calls the func in the parameter
 		fn()
 	}()
 }
