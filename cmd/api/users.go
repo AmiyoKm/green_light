@@ -53,6 +53,12 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
+	err = app.store.Permissions.AddForUser(r.Context(), user.ID, "movies:read")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	token, err := app.store.Tokens.New(r.Context(), user.ID, 3*24*time.Hour, store.ScopeActivation)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)

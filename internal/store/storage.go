@@ -33,13 +33,18 @@ type Storage struct {
 		New(ctx context.Context, userID int64, ttl time.Duration, scope string) (*Token, error)
 		DeleteAllForUser(ctx context.Context, scope string, userID int64) error
 	}
+	Permissions interface {
+		GetAllForUser(ctx context.Context, userID int64) (Permissions, error)
+		AddForUser(ctx context.Context, userID int64, codes ...string) error
+	}
 }
 
 func NewStorage(db *sql.DB) Storage {
 
 	return Storage{
-		Movies: &MovieStore{DB: db},
-		Users:  &UserStore{DB: db},
-		Tokens: &TokenStore{DB: db},
+		Movies:      &MovieStore{DB: db},
+		Users:       &UserStore{DB: db},
+		Tokens:      &TokenStore{DB: db},
+		Permissions: &PermissionStore{DB: db},
 	}
 }
