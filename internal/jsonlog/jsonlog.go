@@ -73,12 +73,14 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 		Properties: properties,
 	}
 
+	// if the level is bigger or equal to error level then collect current stack info
 	if level >= LevelError {
 		aux.Trace = string(debug.Stack())
 	}
 
 	var line []byte
 
+	// converts the map to a JSON
 	line, err := json.Marshal(aux)
 	if err != nil {
 		line = []byte(LevelError.String() + ": unable to marshal log message: " + err.Error())
@@ -90,6 +92,8 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 	return l.out.Write(append(line, '\n'))
 }
 
+// Implements the io.Writer interface for Logger.
+// Writes the given message as an error-level log entry to the given output (os.Stdout or http.ResponseWriter).
 func (l *Logger) Write(message []byte) (n int, err error) {
-	return l.print(LevelError, string(message), nil)
+    return l.print(LevelError, string(message), nil)
 }
