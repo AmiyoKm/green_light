@@ -1,8 +1,10 @@
 package main
 
 import (
+	"expvar"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -212,5 +214,63 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+type metricsResponseWriter struct {
+	http.ResponseWriter
+	statusCode    int
+	headerWritten bool
+}
+
+// custom WriteHeader for our ResponseWriter for satisfying the interface and collect data
+func (mw *metricsResponseWriter) WriteHeader(statusCode int) {
+	mw.WriteHeader(statusCode)
+
+	if !mw.headerWritten {
+		mw.statusCode = statusCode
+		mw.headerWritten = true
+	}
+}
+
+// custom Write for our ResponseWriter for satisfying the interface and collect data
+func (mw *metricsResponseWriter) Write(b []byte) (int, error) {
+	if !mw.headerWritten {
+		mw.statusCode = http.StatusOK
+		mw.headerWritten = true
+	}
+
+	return mw.Write(b)
+}
+
+func (mw *metricsResponseWriter) Unwrap() http.ResponseWriter {
+	return mw.ResponseWriter
+}
+
+func (app *application) metrics(next http.Handler) http.Handler {
+	var (
+		totalRequestsReceived           = expvar.NewInt("total_requests_received")
+		total_responsesSent             = expvar.NewInt("total_responses_sent")
+		totalProcessingTimeMicroseconds = expvar.NewInt("total_processing_time_microseconds")
+		tokenResponseSentByStatus       = expvar.NewMap("total_response_sent_by_status")
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		start := time.Now()
+
+		totalRequestsReceived.Add(1)
+
+		mw := &metricsResponseWriter{ResponseWriter: w}
+
+		// The next HandlerFunc will use our custom metricsResponseWriter (mw) to write the JSON response and set headers.
+		// This allows us to track metrics (like status code and bytes written) in our middleware.
+		next.ServeHTTP(mw, r)
+
+		total_responsesSent.Add(1)
+
+		tokenResponseSentByStatus.Add(strconv.Itoa(mw.statusCode), 1)
+
+		duration := time.Since(start).Microseconds()
+		totalProcessingTimeMicroseconds.Add(duration)
 	})
 }
