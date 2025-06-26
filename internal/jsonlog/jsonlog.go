@@ -95,5 +95,5 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 // Implements the io.Writer interface for Logger.
 // Writes the given message as an error-level log entry to the given output (os.Stdout or http.ResponseWriter).
 func (l *Logger) Write(message []byte) (n int, err error) {
-    return l.print(LevelError, string(message), nil)
+	return l.print(LevelError, string(message), nil)
 }

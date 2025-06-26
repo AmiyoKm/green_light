@@ -25,7 +25,6 @@ func (app *application) serve() error {
 	go func() {
 		quit := make(chan os.Signal, 1)
 
-
 		// if there is a SIGNAL INTERRUPT or SIGNAL TERMINATE made then
 		// sends the OS SIGNAL to quit channel
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

@@ -160,8 +160,7 @@ func (app *application) requiredActivatedUser(next http.HandlerFunc) http.Handle
 // The middleware chain is: requirePermission → requiredActivatedUser → requiredAuthenticatedUser.
 // Each middleware is executed in order when next.ServeHTTP() is called.
 func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
-	var fn http.HandlerFunc
-	fn = func(w http.ResponseWriter, r *http.Request) {
+	fn := func(w http.ResponseWriter, r *http.Request) {
 		user := app.contextGetUser(r)
 
 		permissions, err := app.store.Permissions.GetAllForUser(r.Context(), user.ID)
@@ -218,14 +217,18 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 }
 
 type metricsResponseWriter struct {
-	http.ResponseWriter
+	wrapper       http.ResponseWriter
 	statusCode    int
 	headerWritten bool
 }
 
+func (mw *metricsResponseWriter) Header() http.Header {
+	return mw.wrapper.Header()
+}
+
 // custom WriteHeader for our ResponseWriter for satisfying the interface and collect data
 func (mw *metricsResponseWriter) WriteHeader(statusCode int) {
-	mw.WriteHeader(statusCode)
+	mw.wrapper.WriteHeader(statusCode)
 
 	if !mw.headerWritten {
 		mw.statusCode = statusCode
@@ -240,11 +243,11 @@ func (mw *metricsResponseWriter) Write(b []byte) (int, error) {
 		mw.headerWritten = true
 	}
 
-	return mw.Write(b)
+	return mw.wrapper.Write(b)
 }
 
 func (mw *metricsResponseWriter) Unwrap() http.ResponseWriter {
-	return mw.ResponseWriter
+	return mw.wrapper
 }
 
 func (app *application) metrics(next http.Handler) http.Handler {
@@ -260,7 +263,7 @@ func (app *application) metrics(next http.Handler) http.Handler {
 
 		totalRequestsReceived.Add(1)
 
-		mw := &metricsResponseWriter{ResponseWriter: w}
+		mw := &metricsResponseWriter{wrapper: w}
 
 		// The next HandlerFunc will use our custom metricsResponseWriter (mw) to write the JSON response and set headers.
 		// This allows us to track metrics (like status code and bytes written) in our middleware.
