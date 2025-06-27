@@ -61,10 +61,9 @@ type application struct {
 func main() {
 
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
-    if err := godotenv.Load(); err != nil {
-        logger.PrintInfo("No .env file found, using environment variables", nil)
-    }
-
+	if err := godotenv.Load(); err != nil {
+		logger.PrintInfo("No .env file found, using environment variables", nil)
+	}
 
 	var cfg config
 
@@ -131,7 +130,9 @@ func main() {
 	}
 
 	err = app.serve()
-	logger.PrintFatal(err, nil)
+	if err != nil {
+		logger.PrintFatal(err, nil)
+	}
 }
 
 func openDB(cfg config) (*sql.DB, error) {
