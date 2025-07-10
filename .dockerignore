@@ -1,0 +1,4 @@
+vendor
+bin
+.gitignore
+.env
