@@ -62,6 +62,35 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 	return true, nil
 }
 
+func (s *UserStore) Get(ctx context.Context, userID int64) (*User, error) {
+	query := `
+		SELECT id , created_at , name , email , password_hash , activated , version
+		FROM users WHERE id = $1
+	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeDuration)
+	defer cancel()
+
+	user := &User{}
+	err := s.DB.QueryRowContext(ctx, query, userID).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.Name,
+		&user.Email,
+		&user.Password.hash,
+		&user.Activated,
+		&user.Version,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrorNotFound
+		default:
+			return nil, err
+		}
+	}
+	return user, nil
+}
+
 func (s *UserStore) Create(ctx context.Context, user *User) error {
 	query := `
 		INSERT INTO users (name , email , password_hash , activated)

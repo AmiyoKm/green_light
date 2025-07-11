@@ -54,7 +54,7 @@ vendor:
 
 ## run/api: Run the main Go API server
 run/api:
-	go run ./cmd/api -db-dsn=${DB_DSN}
+	go run ./cmd/api -db-dsn=${DB_DSN} -jwt-secret=${JWT_SECRET}
 
 ## db/migrations/new: Create a new migration file (provide name with 'name=...')
 db/migrations/new:

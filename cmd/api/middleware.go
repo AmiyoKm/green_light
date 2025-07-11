@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/AmiyoKm/green_light/internal/store"
-	"github.com/AmiyoKm/green_light/internal/validator"
 	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 )
@@ -107,13 +106,32 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 
 		token := headerParts[1]
 
-		v := validator.New()
-		if store.ValidateTokenPlaintext(v, token); !v.Valid() {
-			app.invalidAuthenticationTokenResponse(w, r)
+		// v := validator.New()
+		// if store.ValidateTokenPlaintext(v, token); !v.Valid() {
+		// 	app.invalidAuthenticationTokenResponse(w, r)
+		// 	return
+		// }
+		jwtToken, err := app.authenticator.ValidateToken(token)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
 			return
 		}
+		app.logger.PrintInfo(jwtToken.Raw, nil)
 
-		user, err := app.store.Users.GetForToken(r.Context(), store.ScopeAuthentication, token)
+		claims := jwtToken.Claims
+
+		sub, err := claims.GetSubject()
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+		userID, err := strconv.ParseInt(sub, 10, 64)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+		//user, err := app.store.Users.GetForToken(r.Context(), store.ScopeAuthentication, token)
+		user, err := app.store.Users.Get(r.Context(), userID)
 		if err != nil {
 			switch err {
 			case store.ErrorNotFound:
