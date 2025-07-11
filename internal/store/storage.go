@@ -24,6 +24,7 @@ type Storage struct {
 		Delete(ctx context.Context, id int64) error
 	}
 	Users interface {
+		Get(ctx context.Context, userID int64) (*User, error)
 		Create(ctx context.Context, user *User) error
 		GetByEmail(ctx context.Context, email string) (*User, error)
 		Update(ctx context.Context, user *User) error

@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/AmiyoKm/green_light/internal/auth"
 	"github.com/AmiyoKm/green_light/internal/env"
 	"github.com/AmiyoKm/green_light/internal/jsonlog"
 	"github.com/AmiyoKm/green_light/internal/mailer"
@@ -49,13 +50,19 @@ type config struct {
 	cors struct {
 		trustedOrigins []string
 	}
+	jwt struct {
+		secret string
+		exp    time.Duration
+		iss    string
+	}
 }
 type application struct {
-	config config
-	logger *jsonlog.Logger
-	store  store.Storage
-	mailer mailer.Mailer
-	wg     sync.WaitGroup
+	config        config
+	logger        *jsonlog.Logger
+	store         store.Storage
+	mailer        mailer.Mailer
+	wg            sync.WaitGroup
+	authenticator auth.Authenticator
 }
 
 func main() {
@@ -68,9 +75,9 @@ func main() {
 	var cfg config
 
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
-	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
+	flag.StringVar(&cfg.env, "env", env.GetString("ENV", "development"), "Environment (development|staging|production)")
 
-	flag.StringVar(&cfg.db.dsn, "db-dsn", env.GetString("DB_DSN", ""), "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", env.GetString("PROD_DB_DSN", ""), "PostgreSQL DSN")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max idle time")
@@ -89,10 +96,13 @@ func main() {
 		cfg.cors.trustedOrigins = strings.Fields(val)
 		return nil
 	})
-
+	flag.StringVar(&cfg.jwt.secret, "jwt-secret", env.GetString("JWT_SECRET", ""), "JWT SECRET")
+	flag.StringVar(&cfg.jwt.iss, "jwt-iss", env.GetString("JWT_ISS", "greenlight"), "JWT SECRET")
 	displayVersion := flag.Bool("version", false, "Display version and exit")
 
 	flag.Parse()
+
+	cfg.jwt.exp = 24 * time.Hour
 
 	if *displayVersion {
 		fmt.Printf("Version:\t%s\n", version)
@@ -123,10 +133,11 @@ func main() {
 	}))
 
 	app := &application{
-		config: cfg,
-		logger: logger,
-		store:  storage,
-		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
+		config:        cfg,
+		logger:        logger,
+		store:         storage,
+		authenticator: auth.NewJWTAuthenticator(cfg.jwt.secret, cfg.jwt.iss, cfg.jwt.iss),
+		mailer:        mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
 	err = app.serve()

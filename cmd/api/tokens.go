@@ -3,10 +3,12 @@ package main
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/AmiyoKm/green_light/internal/store"
 	"github.com/AmiyoKm/green_light/internal/validator"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func (app *application) sendActivationEmail(w http.ResponseWriter, r *http.Request) {
@@ -111,7 +113,21 @@ func (app *application) createAuthenticationTokenHandler(w http.ResponseWriter, 
 		return
 	}
 
-	token, err := app.store.Tokens.New(r.Context(), user.ID, 24*time.Hour, store.ScopeAuthentication)
+	// token, err := app.store.Tokens.New(r.Context(), user.ID, 24*time.Hour, store.ScopeAuthentication)
+	// if err != nil {
+	// 	app.serverErrorResponse(w, r, err)
+	// 	return
+	// }
+	claims := jwt.MapClaims{
+		"sub": strconv.FormatInt(user.ID, 10),
+		"exp": time.Now().Add(app.config.jwt.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": app.config.jwt.iss,
+		"aud": app.config.jwt.iss,
+	}
+
+	token, err := app.authenticator.GenerateToken(claims)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
