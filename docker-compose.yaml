@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16.9-alpine3.22
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_DB: greenlight
+      POSTGRES_USER: greenlight
+      POSTGRES_PASSWORD: password
+    networks:
+      - backend
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    expose:
+      - 5432
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - backend
+    environment:
+      - DB_DSN=postgres://greenlight:password@db:5432/greenlight?sslmode=disable
+      - JWT_SECRET=your-super-secret-jwt-token-change-me
+
+  proxy:
+    image: nginx:1.25-alpine
+    volumes:
+      - type: bind
+        source: ./proxy/nginx.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+    ports:
+      - 80:80
+    depends_on:
+      - backend
+    networks:
+      - backend
+
+volumes:
+  db-data:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: greenlight-configmap
+data:
+  ENV: "PRODUCTION"
+  JWT_ISS: "github.com/AmiyoKm"
+  SMTP_USERNAME: "33d6aac1de496d"
