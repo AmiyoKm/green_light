@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: greenlight-service
+spec:
+  # Use NodePort for local development access
+  type: NodePort
+  selector:
+    # This must match the labels on your Deployment's pods
+    app: green-light
+  ports:
+    - protocol: TCP
+      # This is the internal port the service listens on. Can be anything.
+      port: 4000
+      # This must match the containerPort in your deployment
+      targetPort: 4000
+      # Kubernetes will automatically assign a port in the 30000-32767 range.
+      # You can optionally specify one yourself, e.g., nodePort: 30001

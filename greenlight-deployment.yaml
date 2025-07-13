@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: greenlight-deployment
+  labels:
+    app: green-light
+
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: green-light
+
+  template:
+    metadata:
+      labels:
+        app: green-light
+
+    spec:
+      containers:
+        - name: greenlight
+          image: amiyokm/green-light:latest
+          ports:
+            - containerPort: 4000
+          envFrom:
+            - configMapRef:
+                name: greenlight-configmap
+            - secretRef:
+                name: greenlight-secret
