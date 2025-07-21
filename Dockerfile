@@ -15,7 +15,7 @@ COPY . .
 RUN go build -ldflags='-s -w' -o=./bin/api ./cmd/api
 
 # Expose port (adjust if your app uses a different port)
-EXPOSE 4000
+EXPOSE 8080
 
 # Run the built binary instead of go run
 CMD ["./bin/api"]
