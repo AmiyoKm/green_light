@@ -117,7 +117,6 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 			return
 		}
 		app.logger.PrintInfo(jwtToken.Raw, nil)
-
 		claims := jwtToken.Claims
 
 		sub, err := claims.GetSubject()
