@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -101,6 +102,14 @@ func main() {
 	displayVersion := flag.Bool("version", false, "Display version and exit")
 
 	flag.Parse()
+
+	portStr := env.GetString("PORT", "")
+	if portStr != "" {
+		port, err := strconv.Atoi(portStr)
+		if err == nil {
+			cfg.port = port
+		}
+	}
 
 	cfg.jwt.exp = 24 * time.Hour
 
