@@ -18,4 +18,4 @@ RUN go build -ldflags='-s -w' -o=./bin/api ./cmd/api
 EXPOSE 8080
 
 # Run the built binary instead of go run
-CMD ["./bin/api"]
+CMD ["./bin/api", "-port=8080"]
